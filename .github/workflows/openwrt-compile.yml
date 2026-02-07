@@ -16,7 +16,7 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential libncurses5-dev libncursesw5-dev \
             zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip \
-            python3-distutils rsync curl flex bison libpcap-dev iptables-dev
+            python3-distutils rsync curl flex bison libpcap-dev libiptc-dev
 
       # 2. 下载 OpenWrt 24.10 官方 SDK（x86_64，适配iStoreOS 24.10.5）
       - name: Download OpenWrt 24.10 official SDK
