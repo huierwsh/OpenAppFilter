@@ -19,12 +19,15 @@ jobs:
             python3-distutils rsync curl flex bison libpcap-dev libiptc-dev
 
       # 2. 下载 OpenWrt 24.10 官方 SDK（x86_64，适配iStoreOS 24.10.5）
-      - name: Download OpenWrt 24.10 official SDK
+      - name: Download OpenWrt 24.10.5 SDK (x86_64)
         run: |
           # OpenWrt 24.10 x86_64 官方SDK（长期有效）
-          SDK_URL="https://downloads.openwrt.org/releases/24.10.0/targets/x86/64/openwrt-sdk-24.10.0-x86-64_gcc-13.2.0_musl.Linux-x86_64.tar.xz"
+          SDK_URL="https://downloads.openwrt.org/releases/24.10.5/targets/x86/64/openwrt-sdk-24.10.5-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst"
+          # 安装 zstd（解压 .zst 格式需）+ 增加 3 次重试 + 跳过证书校验
+          sudo apt install -y zstd
+          wget -O openwrt-sdk.tar.zst $SDK_URL --no-check-certificate --tries=3 --wait=5
           # 下载并解压SDK
-          wget -O openwrt-sdk.tar.xz $SDK_URL --no-check-certificate
+          # wget -O openwrt-sdk.tar.xz $SDK_URL --no-check-certificate
           mkdir -p openwrt-sdk
           tar -xJf openwrt-sdk.tar.xz -C openwrt-sdk --strip-components=1
 
