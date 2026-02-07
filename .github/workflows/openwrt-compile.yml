@@ -1,0 +1,49 @@
+name: Compile OpenAppFilter for OpenWrt/istoreOS
+
+# 触发条件：推送代码到 main 分支，或手动触发
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
+
+# 编译环境
+jobs:
+  compile:
+    runs-on: ubuntu-22.04  # 稳定的 Ubuntu 版本
+    steps:
+      # 步骤1：拉取 Ubuntu 依赖
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3-distutils rsync curl flex bison
+
+      # 步骤2：拉取 OpenWrt SDK（适配 istoreOS 24.10.5 x86_64）
+      - name: Download OpenWrt SDK
+        run: |
+          # 替换为对应架构的 SDK 地址（x86_64 示例）
+          SDK_URL="https://fw.koolcenter.com/iStoreOS/x86_64/iStoreOS-SDK-x86_64.tar.xz"
+          wget -O openwrt-sdk.tar.xz $SDK_URL
+          mkdir -p openwrt-sdk
+          tar -xJf openwrt-sdk.tar.xz -C openwrt-sdk --strip-components=1
+
+      # 步骤3：拉取你的 OpenAppFilter 代码
+      - name: Clone OpenAppFilter
+        run: |
+          cd openwrt-sdk
+          git clone https://github.com/huierwsh/OpenAppFilter package/OpenAppFilter
+
+      # 步骤4：编译插件
+      - name: Compile OpenAppFilter
+        run: |
+          cd openwrt-sdk
+          # 配置编译（仅编译 OpenAppFilter 插件）
+          make defconfig
+          # 开始编译，V=s 显示详细日志（方便排错）
+          make package/OpenAppFilter/compile V=s
+
+      # 步骤5：上传编译产物（ipk 文件）
+      - name: Upload compiled ipk
+        uses: actions/upload-artifact@v4
+        with:
+          name: openappfilter-ipk
+          path: openwrt-sdk/bin/packages/x86_64/*/openappfilter*.ipk
