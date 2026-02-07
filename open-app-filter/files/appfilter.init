@@ -5,6 +5,39 @@ USE_PROCD=1
 OAFD_BIN="/usr/bin/oafd"
 FEATURE_FILE="/tmp/feature.cfg"
 
+# ========== 新增：加载自定义域名规则函数 ==========
+load_custom_domains() {
+    local config_file="/etc/config/oaf"
+    local domain mode time_range
+
+    # 等待oafd服务启动完成（避免规则加载过早）
+    sleep 2
+
+    # 读取自定义域名配置
+    uci -q foreach $config_file custom_domain do
+        domain=$(uci -q get $config_file.${CONFIG_SECTION}.domain)
+        mode=$(uci -q get $config_file.${CONFIG_SECTION}.mode)
+        time_range=$(uci -q get $config_file.${CONFIG_SECTION}.time_range)
+
+        # 跳过空域名
+        [ -z "$domain" ] && continue
+
+        # 兼容time_range为空的情况
+        [ -z "$time_range" ] && time_range="00:00-23:59"
+
+        # 将域名转换为OAF规则格式并添加
+        if [ "$mode" = "block" ]; then
+            oaf-cli add domain "$domain" block "$time_range"
+        else
+            oaf-cli add domain "$domain" allow "$time_range"
+        fi
+    done
+
+    # 刷新规则使配置生效
+    oaf-cli apply
+    echo "Custom domain filter rules loaded successfully"
+}
+
 stop_service(){
 	killall -9 oafd
 }
@@ -19,4 +52,7 @@ start_service(){
 	procd_set_param stderr 1
 	procd_set_param command "$OAFD_BIN"
 	procd_close_instance
+
+    # ========== 新增：调用自定义域名加载函数 ==========
+    load_custom_domains
 }
