@@ -43,14 +43,13 @@ local time_range = section:option(Value, "time_range", translate("Time Range (Op
 time_range.description = translate("Format: 08:00-22:00, leave empty for always")
 time_range.size = 15
 
--- ========== 新增保存按钮（关键：绑定Map的提交逻辑，而非直接跳转） ==========
--- 方式：复用Map的默认保存逻辑，自动调用我们注册的save_custom_domain接口
+-- ========== 保存逻辑（仅优化1行：移除重定向，避免路径问题） ==========
 m.submit = translate("Save All Config")
 m.on_after_commit = function(self)
     -- 保存后重启appfilter服务，确保规则生效
     luci.sys.call("/etc/init.d/appfilter restart >/dev/null 2>&1")
-    -- 重定向回OAF主页面
-    luci.http.redirect(luci.dispatcher.build_url("admin/services/appfilter"))
+    -- 注释/删除这行重定向，避免路径不匹配导致的404（Map会自动留在当前页面）
+    -- luci.http.redirect(luci.dispatcher.build_url("admin/services/appfilter"))
 end
 
 return m
