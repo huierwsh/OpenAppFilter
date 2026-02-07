@@ -1,49 +1,53 @@
-name: Compile OpenAppFilter for OpenWrt/istoreOS
+name: Compile OpenAppFilter for OpenWrt 24.10 (iStoreOS 24.10.5)
 
-# 触发条件：推送代码到 main 分支，或手动触发
+# 触发条件：推送代码/手动触发
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
-# 编译环境
 jobs:
   compile:
-    runs-on: ubuntu-22.04  # 稳定的 Ubuntu 版本
+    runs-on: ubuntu-22.04  # 稳定编译环境
     steps:
-      # 步骤1：拉取 Ubuntu 依赖
-      - name: Install dependencies
+      # 1. 安装基础编译依赖
+      - name: Install system dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3-distutils rsync curl flex bison
+          sudo apt install -y build-essential libncurses5-dev libncursesw5-dev \
+            zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip \
+            python3-distutils rsync curl flex bison libpcap-dev iptables-dev
 
-      # 步骤2：拉取 OpenWrt SDK（适配 istoreOS 24.10.5 x86_64）
-      - name: Download OpenWrt SDK
+      # 2. 下载 OpenWrt 24.10 官方 SDK（x86_64，适配iStoreOS 24.10.5）
+      - name: Download OpenWrt 24.10 official SDK
         run: |
-          # 替换为对应架构的 SDK 地址（x86_64 示例）
-          SDK_URL="https://fw.koolcenter.com/iStoreOS/x86_64/iStoreOS-SDK-x86_64.tar.xz"
-          wget -O openwrt-sdk.tar.xz $SDK_URL
+          # OpenWrt 24.10 x86_64 官方SDK（长期有效）
+          SDK_URL="https://downloads.openwrt.org/releases/24.10.0/targets/x86/64/openwrt-sdk-24.10.0-x86-64_gcc-13.2.0_musl.Linux-x86_64.tar.xz"
+          # 下载并解压SDK
+          wget -O openwrt-sdk.tar.xz $SDK_URL --no-check-certificate
           mkdir -p openwrt-sdk
           tar -xJf openwrt-sdk.tar.xz -C openwrt-sdk --strip-components=1
 
-      # 步骤3：拉取你的 OpenAppFilter 代码
-      - name: Clone OpenAppFilter
+      # 3. 拉取你的 OpenAppFilter 代码
+      - name: Clone your OpenAppFilter repo
         run: |
           cd openwrt-sdk
           git clone https://github.com/huierwsh/OpenAppFilter package/OpenAppFilter
 
-      # 步骤4：编译插件
-      - name: Compile OpenAppFilter
+      # 4. 配置并编译插件（仅编译OpenAppFilter，提速）
+      - name: Compile OpenAppFilter plugin
         run: |
           cd openwrt-sdk
-          # 配置编译（仅编译 OpenAppFilter 插件）
+          # 加载默认配置
           make defconfig
-          # 开始编译，V=s 显示详细日志（方便排错）
+          # 仅编译OpenAppFilter，V=s显示详细日志（排错用）
           make package/OpenAppFilter/compile V=s
 
-      # 步骤5：上传编译产物（ipk 文件）
-      - name: Upload compiled ipk
+      # 5. 上传编译好的ipk文件（可直接下载使用）
+      - name: Upload compiled IPK
         uses: actions/upload-artifact@v4
         with:
-          name: openappfilter-ipk
-          path: openwrt-sdk/bin/packages/x86_64/*/openappfilter*.ipk
+          name: openappfilter-ipk-x86_64
+          path: |
+            openwrt-sdk/bin/packages/x86_64/*/openappfilter*.ipk
+            openwrt-sdk/bin/packages/x86_64/*/luci-app-oaf*.ipk
